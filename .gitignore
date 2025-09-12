@@ -1,0 +1,33 @@
+# --- Build artifacts ---
+*.o            # object files
+*.a            # static libraries
+*.so           # shared libraries (Linux)
+*.dll          # dynamic libraries (Windows)
+*.exe          # Windows executables
+monty          # compiled program name (adjust if different)
+
+# --- Archives / compressed files ---
+*.tar
+*.tar.gz
+*.zip
+
+# --- Editor / system files ---
+*.swp          # Vim swap files
+*~             # backup files (file.c~)
+.DS_Store      # macOS Finder metadata
+Thumbs.db      # Windows Explorer metadata
+
+# --- Generated outputs (specific to this project) ---
+woutput*
+loutput*
+*.backup
+*.out
+
+# --- Build directories (if you add them) ---
+build/
+bin/
+obj/
+
+# --- Logs / core dumps ---
+*.log
+*.core
