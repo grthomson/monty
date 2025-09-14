@@ -1,18 +1,57 @@
-# Make file for the game
+# Makefile — Monty Hall (small C project best practice)
 
-CC=gcc
-obj=main.o game.o
+# ---- Config ---------------------------------------------------------------
+CC      ?= gcc
+STD       = -std=c11
+WARN      = -Wall -Wextra -Wpedantic
+INC       = -Iinclude
+REL_OPTS  = -O3
+DBG_OPTS  = -O0 -g3 -fsanitize=address,undefined -fno-omit-frame-pointer
+DEPFLAGS  = -MMD -MP
 
-# If you run make game, this checks that the files in obj exist, if they do not,, it compiles the source code. It then links the files using my chosen C compiler.
-game: $(obj)
-	$(CC) -o $@ $^
-	echo "Compiled and linked"
+SRC      := src/main.c src/monty_logic.c
+OBJ      := $(patsubst src/%.c,build/%.o,$(SRC))
+DEP      := $(OBJ:.o=.d)
+BIN      := monty
 
-%.o: %.c
-	echo "Compiling source code"
-	gcc -c -o $@ $<
-	echo "Source code compiled"
+.DEFAULT_GOAL := release
 
-# This cleans away everything that is not needed. This was written by Gareth, not me
+# ---- Build modes ----------------------------------------------------------
+release: CFLAGS := $(STD) $(WARN) $(REL_OPTS) $(INC) $(DEPFLAGS)
+release: $(BIN)
+
+debug:   CFLAGS := $(STD) $(WARN) $(DBG_OPTS) $(INC) $(DEPFLAGS)
+debug:   $(BIN)
+
+# ---- Link -----------------------------------------------------------------
+$(BIN): $(OBJ)
+	@echo "Linking $@"
+	$(CC) $(CFLAGS) $^ -o $@
+
+# ---- Compile (out-of-source to build/) ------------------------------------
+build/%.o: src/%.c | build
+	@echo "Compiling $<"
+	$(CC) $(CFLAGS) -c $< -o $@
+
+build:
+	@mkdir -p build
+
+# ---- Utilities ------------------------------------------------------------
+.PHONY: clean clobber run test format
+
+run: release
+	./$(BIN)
+
+test: release
+	@scripts/simulate.sh -n 10000
+
 clean:
-	rm *.o game
+	@echo "Cleaning objects"
+	@rm -f $(OBJ) $(DEP)
+
+clobber: clean
+	@echo "Removing binary"
+	@rm -f $(BIN)
+
+# ---- Auto-deps ------------------------------------------------------------
+-include $(DEP)
