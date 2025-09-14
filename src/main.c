@@ -1,37 +1,58 @@
 #include <stdio.h>
-#include "game.h"
+#include <stdlib.h>
+#include <time.h>
+#include <string.h>
+#include <ctype.h>
+#include "monty.h"
 
-int main() {
-    int car = door_car();
-    int choice;
-    int reveal;
-    char change;
+static int read_int_between(const char *prompt, int lo, int hi) {
+    int x;
+    for (;;) {
+        printf("%s", prompt);
+        if (scanf("%d", &x) == 1 && x >= lo && x <= hi) return x;
+        // flush invalid input
+        int c; while ((c = getchar()) != '\n' && c != EOF) {}
+        printf("Please enter a number between %d and %d.\n", lo, hi);
+    }
+}
 
-    /* This function just prints the doors */
-    printf("Choose a door, 1, 2 or 3: ");
-    scanf("%d", &choice);
-    /* I am using the door_goat function given to reveal a goat in a door which has not been chosen */
-    reveal = door_goat(car, choice);
-    printf("The door %d has a goat behind it.\n", reveal);
-    printf("Would you like to switch doors? (yes/no): ");
-    /* I used a space before the %c as otherwise it would take the enter from my previous scanf and take that as the input */
-    scanf(" %c", &change);
-    
-    /* If the user changes, then if they would have lost before, then they win, and if they would have won then they lost, I used this information for my if statements */
-    if (change == 'y') {
-        if (winning(car, choice) == 0) {
-            printf("You did not win the car.\n");
-        } else {
-            printf("You win the car.\n");
+static int read_yes_no(const char *prompt) {
+    char buf[16];
+    for (;;) {
+        printf("%s", prompt);
+        if (scanf("%15s", buf) == 1) {
+            for (char *p = buf; *p; ++p) *p = (char)tolower(*p);
+            if (!strcmp(buf, "y") || !strcmp(buf, "yes")) return 1;
+            if (!strcmp(buf, "n") || !strcmp(buf, "no"))  return 0;
         }
-    } else if (change == 'n') {
-        if (winning(car, choice) == 0) {
-            printf("You win the car.\n");
-        } else {
-            printf("You did not win the car.\n");
-        }
+        // flush rest of line
+        int c; while ((c = getchar()) != '\n' && c != EOF) {}
+        printf("Please answer yes or no.\n");
+    }
+}
+
+int main(void) {
+    // seed RNG once
+    unsigned seed = (unsigned)time(NULL);
+    srand(seed);
+
+    int car    = random_car_door();
+    int choice = read_int_between("Choose a door (1, 2, or 3): ", 1, 3);
+
+    int reveal = host_reveal_door(car, choice);
+    printf("Host reveals: door %d has a goat behind it.\n", reveal);
+
+    int do_switch = read_yes_no("Would you like to switch doors? (yes/no): ");
+    if (do_switch) {
+        // the remaining closed door: 1+2+3 = 6
+        choice = 6 - choice - reveal;
+    }
+
+    if (is_win(car, choice)) {
+        printf("You win the car! (car behind door %d)\n", car);
+        return 0;
     } else {
-        printf("Wrong input.\n");
-        return 1;
+        printf("You did not win the car. (car behind door %d)\n", car);
+        return 0;
     }
 }
