@@ -1,18 +1,48 @@
-# Make file for the game
+# ---- Config
+CC      = gcc
+STD     = -std=c11
+WARN    = -Wall -Wextra -Wpedantic
+INC     = -Iinclude
+REL_OPTS= -O3
+DEPFLAGS= -MMD -MP
 
-CC=gcc
-obj=main.o game.o
+SRC     := src/main.c src/monty_logic.c
+OBJ     := $(patsubst src/%.c,build/%.o,$(SRC))
+DEP     := $(OBJ:.o=.d)
+BIN     := monty
 
-# If you run make game, this checks that the files in obj exist, if they do not,, it compiles the source code. It then links the files using my chosen C compiler.
-game: $(obj)
-	$(CC) -o $@ $^
-	echo "Compiled and linked"
+# Writable temp the tools will use (avoid C:\WINDOWS)
+TMPDIR  := $(abspath build/tmp)
+export TMPDIR
+export TMP   := $(TMPDIR)
+export TEMP  := $(TMPDIR)
 
-%.o: %.c
-	echo "Compiling source code"
-	gcc -c -o $@ $<
-	echo "Source code compiled"
+.DEFAULT_GOAL := release
 
-# This cleans away everything that is not needed. This was written by Gareth, not me
+# ---- Targets
+release: CFLAGS := $(STD) $(WARN) $(REL_OPTS) $(INC) $(DEPFLAGS)
+release: $(BIN)
+
+$(BIN): $(OBJ) | build tmpdir
+	@echo "Linking $@"
+	$(CC) $(CFLAGS) $^ -o $@
+
+build/%.o: src/%.c | build tmpdir
+	@echo "Compiling $<"
+	$(CC) $(CFLAGS) -c $< -o $@
+
+build:
+	@mkdir -p build
+
+tmpdir:
+	@mkdir -p "$(TMPDIR)"
+
 clean:
-	rm *.o game
+	@echo "Cleaning objects"
+	@rm -f $(OBJ) $(DEP)
+
+clobber: clean
+	@echo "Removing binary"
+	@rm -f $(BIN)
+
+-include $(DEP)
